@@ -12,3 +12,6 @@ export const getJob = (id: string): Promise<Job> =>
 
 export const cancelJob = (id: string): Promise<void> =>
   client.delete(`/jobs/${id}`).then(() => undefined)
+
+export const retryJob = (id: string): Promise<Job> =>
+  client.post<Job>(`/jobs/${id}/retry`).then(r => r.data)

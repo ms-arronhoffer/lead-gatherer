@@ -1,7 +1,10 @@
+export type DiscoverySource = 'google_places' | 'brave' | 'osm'
+
 export interface JobConfig {
   category: string
   location: string
   max_results: number
+  sources: DiscoverySource[]
   employee_min?: number | null
   employee_max?: number | null
   revenue_range?: string | null
@@ -21,6 +24,8 @@ export interface Job {
   created_at: number
   updated_at: number
   progress_pct: number
+  attempt?: number
+  checkpoint?: Record<string, unknown>
 }
 
 export interface JobProgressEvent {

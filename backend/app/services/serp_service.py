@@ -9,6 +9,7 @@ from app.config import settings
 from app.db import AsyncSessionLocal
 from app.models import LeadEmail
 from app.utils.email_extractor import _EMAIL_PATTERN, _is_noise
+from app.utils.email_validator import validate_email
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ async def enrich_with_serp(lead_id: str, name: str, city: str) -> None:
             )
             if existing.scalar_one_or_none():
                 continue
+            v = await validate_email(normalized)
             session.add(LeadEmail(
                 id=str(uuid.uuid4()),
                 lead_id=lead_id,
@@ -62,6 +64,10 @@ async def enrich_with_serp(lead_id: str, name: str, city: str) -> None:
                 email_normalized=normalized,
                 source="serp",
                 confidence=confidence,
+                mx_valid=v.mx_valid,
+                role_based=v.role_based,
+                disposable=v.disposable,
+                validated_at=v.validated_at,
                 created_at=int(time.time()),
             ))
         await session.commit()

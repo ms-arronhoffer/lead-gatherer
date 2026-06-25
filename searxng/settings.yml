@@ -1,0 +1,42 @@
+# SearXNG settings — minimal config tuned for use as an internal search backend
+# for the URL harvester. Full reference:
+# https://docs.searxng.org/admin/settings/settings.html
+
+use_default_settings: true
+
+general:
+  instance_name: "leadgen-searxng"
+  debug: false
+
+server:
+  # Replace via SEARXNG_SECRET env var in docker-compose
+  secret_key: "change-me-in-env"
+  limiter: false
+  image_proxy: false
+  http_protocol_version: "1.1"
+  method: "POST"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  # JSON is OFF by default in upstream — the URL harvester needs it
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true
+
+# Trim engines to fast / no-CAPTCHA defaults; tweak as needed
+engines:
+  - name: duckduckgo
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: google
+    disabled: true  # often CAPTCHAs server IPs

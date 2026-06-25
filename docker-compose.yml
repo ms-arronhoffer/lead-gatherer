@@ -1,4 +1,36 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: leadgen-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: leadgen-searxng
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      SEARXNG_BASE_URL: "http://localhost:8081/"
+      SEARXNG_SECRET: "${SEARXNG_SECRET:-change-me-please}"
+      INSTANCE_NAME: "leadgen-searxng"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   backend:
     build:
       context: ./backend
@@ -10,8 +42,16 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: "sqlite+aiosqlite:////data/leadgen.db"
+      REDIS_URL: "redis://redis:6379/0"
+      SEARXNG_URL: "${SEARXNG_URL:-http://searxng:8080}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      searxng:
+        condition: service_healthy
     volumes:
       - ./backend/app:/app/app
+      - ./backend/.env:/app/.env:ro
       - ./data:/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:

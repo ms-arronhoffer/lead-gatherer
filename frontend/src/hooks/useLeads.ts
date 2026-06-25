@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listLeads, updateLead, deleteLead } from '../api/leads'
+import { listLeads, updateLead, deleteLead, getLead, revalidateLead, enrichLead, assignLead, listLeadActivities } from '../api/leads'
 import type { LeadFilters } from '../api/leads'
-import type { LeadUpdate } from '../types/lead'
+import type { Lead, LeadsPage, LeadUpdate } from '../types/lead'
 
 export const useLeads = (filters: LeadFilters) =>
   useQuery({
@@ -9,11 +9,39 @@ export const useLeads = (filters: LeadFilters) =>
     queryFn: () => listLeads(filters),
   })
 
+export const useLead = (id: string | null) =>
+  useQuery({
+    queryKey: ['lead', id],
+    queryFn: () => getLead(id as string),
+    enabled: !!id,
+  })
+
 export const useUpdateLead = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: LeadUpdate }) => updateLead(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onMutate: async ({ id, data }) => {
+      await qc.cancelQueries({ queryKey: ['leads'] })
+      await qc.cancelQueries({ queryKey: ['lead', id] })
+
+      const prevLists = qc.getQueriesData<LeadsPage>({ queryKey: ['leads'] })
+      const prevLead = qc.getQueryData<Lead>(['lead', id])
+
+      qc.setQueriesData<LeadsPage>({ queryKey: ['leads'] }, old =>
+        old ? { ...old, items: old.items.map(l => l.id === id ? { ...l, ...data } : l) } : old
+      )
+      if (prevLead) qc.setQueryData<Lead>(['lead', id], { ...prevLead, ...data })
+
+      return { prevLists, prevLead }
+    },
+    onError: (_err, { id }, ctx) => {
+      ctx?.prevLists.forEach(([key, val]) => qc.setQueryData(key, val))
+      if (ctx?.prevLead) qc.setQueryData(['lead', id], ctx.prevLead)
+    },
+    onSettled: (_data, _err, { id }) => {
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['lead', id] })
+    },
   })
 }
 
@@ -24,3 +52,48 @@ export const useDeleteLead = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   })
 }
+
+export const useRevalidateLead = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => revalidateLead(id),
+    onSuccess: (lead) => {
+      qc.setQueryData(['lead', lead.id], lead)
+      qc.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+}
+
+export const useEnrichLead = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => enrichLead(id),
+    onSuccess: (_, id) => {
+      // Refetch after a short delay so the worker has a chance to update the lead
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ['lead', id] })
+        qc.invalidateQueries({ queryKey: ['leads'] })
+        qc.invalidateQueries({ queryKey: ['lead-activities', id] })
+      }, 5000)
+    },
+  })
+}
+
+export const useAssignLead = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string | null }) => assignLead(id, userId),
+    onSuccess: (lead) => {
+      qc.setQueryData(['lead', lead.id], lead)
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['lead-activities', lead.id] })
+    },
+  })
+}
+
+export const useLeadActivities = (id: string | null) =>
+  useQuery({
+    queryKey: ['lead-activities', id],
+    queryFn: () => listLeadActivities(id as string),
+    enabled: !!id,
+  })

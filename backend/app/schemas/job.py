@@ -5,6 +5,7 @@ class JobConfig(BaseModel):
     category: str
     location: str
     max_results: int = Field(default=50, ge=1, le=500)
+    sources: list[str] = Field(default_factory=lambda: ["google_places"])
     employee_min: int | None = None
     employee_max: int | None = None
     revenue_range: str | None = None
@@ -29,6 +30,8 @@ class JobRead(BaseModel):
     created_at: int
     updated_at: int
     progress_pct: float = 0.0
+    attempt: int = 0
+    checkpoint: dict = Field(default_factory=dict)
 
     model_config = {"from_attributes": True}
 

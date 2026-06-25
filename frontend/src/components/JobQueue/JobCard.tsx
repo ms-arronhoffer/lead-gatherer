@@ -1,7 +1,8 @@
 import { Box, Typography, LinearProgress, Chip, Stack, IconButton, Tooltip } from '@mui/material'
 import CancelIcon from '@mui/icons-material/Cancel'
+import ReplayIcon from '@mui/icons-material/Replay'
 import { useJobSocket } from '../../hooks/useJobSocket'
-import { useCancelJob } from '../../hooks/useJobs'
+import { useCancelJob, useRetryJob } from '../../hooks/useJobs'
 import type { Job } from '../../types/job'
 
 const STATUS_COLOR: Record<string, 'default' | 'primary' | 'success' | 'error' | 'warning'> = {
@@ -21,11 +22,13 @@ export default function JobCard({ job }: Props) {
     ['pending', 'running'].includes(job.status) ? job.id : null
   )
   const { mutate: cancel } = useCancelJob()
+  const { mutate: retry, isPending: retrying } = useRetryJob()
 
   const pct = progress?.progress_pct ?? job.progress_pct
   const found = progress?.leads_found ?? job.leads_found
   const status = progress?.status ?? job.status
   const phase = progress?.phase ?? job.phase
+  const attempt = job.attempt ?? 0
 
   return (
     <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
@@ -39,14 +42,28 @@ export default function JobCard({ job }: Props) {
           <Typography variant="body2" fontWeight={600}>
             {job.config.category} · {job.config.location}
           </Typography>
+          {attempt > 1 && (
+            <Chip label={`attempt ${attempt}`} size="small" variant="outlined" />
+          )}
         </Stack>
-        {['pending', 'running'].includes(status) && (
-          <Tooltip title="Cancel job">
-            <IconButton size="small" onClick={() => cancel(job.id)}>
-              <CancelIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Stack direction="row" spacing={0.5}>
+          {['failed', 'cancelled'].includes(status) && (
+            <Tooltip title="Retry job (resumes from last completed phase)">
+              <span>
+                <IconButton size="small" onClick={() => retry(job.id)} disabled={retrying}>
+                  <ReplayIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+          {['pending', 'running'].includes(status) && (
+            <Tooltip title="Cancel job">
+              <IconButton size="small" onClick={() => cancel(job.id)}>
+                <CancelIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
       </Stack>
 
       {['running', 'pending'].includes(status) && (

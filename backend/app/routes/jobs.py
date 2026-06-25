@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth import current_user
 from app.db import get_session
-from app.models import Job, JobLead, Lead
+from app.models import Job, JobLead, Lead, User
 from app.schemas.job import JobCreate, JobRead
 from app.schemas.lead import LeadRead
 
@@ -29,11 +30,17 @@ def _job_to_read(job: Job) -> JobRead:
         created_at=job.created_at,
         updated_at=job.updated_at,
         progress_pct=pct,
+        attempt=job.attempt,
+        checkpoint=job.checkpoint or {},
     )
 
 
 @router.post("", response_model=JobRead, status_code=201)
-async def create_job(body: JobCreate, session: AsyncSession = Depends(get_session)):
+async def create_job(
+    body: JobCreate,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
     job = Job(
         id=str(uuid.uuid4()),
         status="pending",
@@ -45,9 +52,8 @@ async def create_job(body: JobCreate, session: AsyncSession = Depends(get_sessio
     await session.commit()
     await session.refresh(job)
 
-    # Enqueue — import lazily to avoid circular deps at startup
-    from app.workers.job_runner import enqueue
-    await enqueue(job.id)
+    from app.workers.arq_pool import enqueue_pipeline
+    await enqueue_pipeline(job.id)
 
     return _job_to_read(job)
 
@@ -57,6 +63,7 @@ async def list_jobs(
     page: int = 1,
     page_size: int = 20,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
 ):
     offset = (page - 1) * page_size
     result = await session.execute(
@@ -66,7 +73,11 @@ async def list_jobs(
 
 
 @router.get("/{job_id}", response_model=JobRead)
-async def get_job(job_id: str, session: AsyncSession = Depends(get_session)):
+async def get_job(
+    job_id: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
     job = await session.get(Job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -74,7 +85,11 @@ async def get_job(job_id: str, session: AsyncSession = Depends(get_session)):
 
 
 @router.delete("/{job_id}", status_code=204)
-async def cancel_job(job_id: str, session: AsyncSession = Depends(get_session)):
+async def cancel_job(
+    job_id: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
     job = await session.get(Job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -84,6 +99,36 @@ async def cancel_job(job_id: str, session: AsyncSession = Depends(get_session)):
     job.updated_at = int(time.time())
     await session.commit()
 
+    # Abort the in-flight Arq task so blocking HTTP calls stop immediately
+    from app.workers.arq_pool import abort_pipeline
+    await abort_pipeline(job_id)
+
+
+@router.post("/{job_id}/retry", response_model=JobRead)
+async def retry_job(
+    job_id: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    job = await session.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status not in ("failed", "cancelled"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Only failed/cancelled jobs can be retried (current: {job.status})",
+        )
+    job.status = "pending"
+    job.error_message = None
+    job.updated_at = int(time.time())
+    await session.commit()
+    await session.refresh(job)
+
+    from app.workers.arq_pool import enqueue_pipeline
+    await enqueue_pipeline(job.id)
+
+    return _job_to_read(job)
+
 
 @router.get("/{job_id}/leads", response_model=list[LeadRead])
 async def get_job_leads(
@@ -91,6 +136,7 @@ async def get_job_leads(
     page: int = 1,
     page_size: int = 50,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
 ):
     job = await session.get(Job, job_id)
     if not job:

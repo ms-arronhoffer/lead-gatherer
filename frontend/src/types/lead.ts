@@ -1,10 +1,17 @@
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'rejected'
 
+import type { User } from './user'
+import type { Tag } from './tag'
+
 export interface LeadEmail {
   id: string
   email: string
   source: string
   confidence: number
+  mx_valid?: boolean | null
+  role_based?: boolean
+  disposable?: boolean
+  validated_at?: number | null
 }
 
 export interface LeadContact {
@@ -24,10 +31,13 @@ export interface Lead {
   city: string | null
   state: string | null
   phone: string | null
+  phone_normalized?: string | null
+  phone_type?: string | null
   website: string | null
   place_types: string[]
   emails: LeadEmail[]
   contacts: LeadContact[]
+  tags: Tag[]
   employee_count_min: number | null
   employee_count_max: number | null
   revenue_range: string | null
@@ -36,8 +46,25 @@ export interface Lead {
   notes: string | null
   source: string
   scraped_at: number | null
+  assigned_to_user_id?: string | null
+  assignee?: User | null
+  last_touched_at?: number | null
+  last_touched_by_user_id?: string | null
+  last_touched_by?: User | null
+  score?: number | null
+  matched_segment_ids?: string[]
+  summary?: string | null
+  summary_generated_at?: number | null
+  fit_reasons?: FitReason[]
+  fit_reasons_generated_at?: number | null
   created_at: number
   updated_at: number
+}
+
+export interface FitReason {
+  segment_id: string
+  segment_name: string
+  rationale: string
 }
 
 export interface LeadsPage {
@@ -53,4 +80,21 @@ export interface LeadUpdate {
   employee_count_min?: number
   employee_count_max?: number
   revenue_range?: string
+  name?: string
+  website?: string | null
+  phone?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  place_types?: string[]
+}
+
+export interface LeadActivity {
+  id: string
+  lead_id: string
+  user_id: string | null
+  user?: User | null
+  action: string
+  payload: Record<string, unknown>
+  created_at: number
 }
