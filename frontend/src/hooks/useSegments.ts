@@ -1,11 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  createSegment, deleteSegment, listSegments, previewSegment, rescoreAll, updateSegment,
+  applySegmentTuning, createSegment, deleteSegment, getSegmentTuning, listSegments,
+  previewSegment, rescoreAll, updateSegment,
 } from '../api/segments'
 import type { SegmentCreate, SegmentUpdate } from '../types/segment'
 
 export const useSegments = () =>
   useQuery({ queryKey: ['segments'], queryFn: listSegments })
+
+export const useSegmentTuning = () =>
+  useQuery({ queryKey: ['segment-tuning'], queryFn: getSegmentTuning })
+
+export const useApplySegmentTuning = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => applySegmentTuning(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['segments'] })
+      qc.invalidateQueries({ queryKey: ['segment-tuning'] })
+      qc.invalidateQueries({ queryKey: ['leads'] })
+      qc.invalidateQueries({ queryKey: ['hot-leads'] })
+    },
+  })
+}
 
 export const useCreateSegment = () => {
   const qc = useQueryClient()

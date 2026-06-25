@@ -1,5 +1,7 @@
 import client from './client'
-import type { Segment, SegmentCreate, SegmentPreview, SegmentUpdate } from '../types/segment'
+import type {
+  Segment, SegmentCreate, SegmentPreview, SegmentTuning, SegmentTuningApplied, SegmentUpdate,
+} from '../types/segment'
 
 export const listSegments = (): Promise<Segment[]> =>
   client.get<Segment[]>('/segments').then(r => r.data)
@@ -18,3 +20,9 @@ export const previewSegment = (data: SegmentCreate): Promise<SegmentPreview> =>
 
 export const rescoreAll = (): Promise<{ rescored: number }> =>
   client.post<{ rescored: number }>('/segments/rescore').then(r => r.data)
+
+export const getSegmentTuning = (): Promise<SegmentTuning[]> =>
+  client.get<SegmentTuning[]>('/segments/tuning').then(r => r.data)
+
+export const applySegmentTuning = (): Promise<SegmentTuningApplied> =>
+  client.post<SegmentTuningApplied>('/segments/tuning/apply').then(r => r.data)

@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
 import {
+  Accordion, AccordionDetails, AccordionSummary,
   Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem,
-  Select, Stack, Switch, TextField, Tooltip, Typography,
+  Select, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow,
+  TextField, Tooltip, Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import TuneIcon from '@mui/icons-material/Tune'
 import {
-  useCreateSegment, useDeleteSegment, usePreviewSegment, useRescoreAll,
-  useSegments, useUpdateSegment,
+  useApplySegmentTuning, useCreateSegment, useDeleteSegment, usePreviewSegment,
+  useRescoreAll, useSegments, useSegmentTuning, useUpdateSegment,
 } from '../hooks/useSegments'
 import { useTags } from '../hooks/useTags'
 import type { Segment, SegmentCreate, SegmentRules } from '../types/segment'
@@ -69,6 +73,8 @@ export default function SegmentsPage() {
         Each lead's score is the <strong>maximum weight</strong> of any segment whose rules it satisfies.
         All listed rules must pass for a segment to match.
       </Typography>
+
+      <TuningPanel />
 
       {isLoading && <Typography>Loading…</Typography>}
 
@@ -384,5 +390,88 @@ function SegmentEditor({ initial, onClose }: { initial: Segment | null; onClose:
         </Button>
       </DialogActions>
     </Dialog>
+  )
+}
+
+function TuningPanel() {
+  const { data: tuning = [], isLoading } = useSegmentTuning()
+  const { mutate: apply, isPending: applying, data: applied } = useApplySegmentTuning()
+  const changes = tuning.filter(t => t.delta !== 0)
+
+  return (
+    <Accordion variant="outlined" sx={{ mb: 2 }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <TuneIcon fontSize="small" />
+          <Typography sx={{ fontWeight: 600 }}>Auto-tune weights from outcomes</Typography>
+          {changes.length > 0 && (
+            <Chip label={`${changes.length} proposed`} size="small" color="warning" />
+          )}
+        </Stack>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Adjusts each segment's weight toward the qualified-conversion rate of the leads it matches.
+          Segments without enough matched leads are left unchanged.
+        </Typography>
+        {isLoading ? (
+          <Typography variant="body2">Loading…</Typography>
+        ) : tuning.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No enabled segments to tune.</Typography>
+        ) : (
+          <>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Segment</TableCell>
+                  <TableCell align="right">Matched</TableCell>
+                  <TableCell align="right">Qualified</TableCell>
+                  <TableCell align="right">Conv. rate</TableCell>
+                  <TableCell align="right">Weight</TableCell>
+                  <TableCell align="right">Proposed</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tuning.map(t => (
+                  <TableRow key={t.segment_id}>
+                    <TableCell>{t.name}</TableCell>
+                    <TableCell align="right">{t.matched}</TableCell>
+                    <TableCell align="right">{t.qualified}</TableCell>
+                    <TableCell align="right">{(t.conversion_rate * 100).toFixed(0)}%</TableCell>
+                    <TableCell align="right">{t.current_weight}</TableCell>
+                    <TableCell align="right">
+                      {t.delta === 0 ? (
+                        <Typography variant="body2" color="text.secondary" component="span">—</Typography>
+                      ) : (
+                        <Chip
+                          label={`${t.proposed_weight} (${t.delta > 0 ? '+' : ''}${t.delta})`}
+                          size="small"
+                          color={t.delta > 0 ? 'success' : 'error'}
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mt: 1.5 }}>
+              <Button
+                variant="contained"
+                startIcon={<TuneIcon />}
+                disabled={applying || changes.length === 0}
+                onClick={() => apply()}
+              >
+                {applying ? 'Applying…' : `Apply ${changes.length} change${changes.length === 1 ? '' : 's'}`}
+              </Button>
+              {applied && (
+                <Typography variant="body2" color="text.secondary">
+                  Applied {applied.applied.length}, rescored {applied.rescored} leads.
+                </Typography>
+              )}
+            </Stack>
+          </>
+        )}
+      </AccordionDetails>
+    </Accordion>
   )
 }

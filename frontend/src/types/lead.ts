@@ -88,6 +88,18 @@ export interface LeadsPage {
   items: Lead[]
 }
 
+export interface SignalMetric {
+  type: string
+  leads: number
+  contacted: number
+  qualified: number
+  qualified_rate: number
+}
+
+export interface SignalMetrics {
+  signal_types: SignalMetric[]
+}
+
 export interface LeadUpdate {
   status?: LeadStatus
   notes?: string
