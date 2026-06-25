@@ -60,7 +60,7 @@ export default function SequencesPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h5">Sequences</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
           New sequence
@@ -186,14 +186,14 @@ function SequenceEditor({ initial, onCancel, onSave, busy }: EditorProps) {
           <TextField label="Description" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth multiline rows={2} />
           <FormControlLabel control={<Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />} label="Enabled" />
           <Divider />
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="subtitle1">Steps</Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={() => setSteps([...steps, EMPTY_STEP])}>Add step</Button>
           </Stack>
           {steps.map((s, idx) => (
             <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
               <Stack spacing={1}>
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                   <TextField label="Day offset" type="number" size="small" value={s.day_offset}
                     onChange={(e) => updateStep(idx, { day_offset: parseInt(e.target.value || '0', 10) })} />
                   <FormControlLabel control={<Switch checked={s.requires_approval}

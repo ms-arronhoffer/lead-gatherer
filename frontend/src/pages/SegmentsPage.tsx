@@ -46,7 +46,7 @@ export default function SegmentsPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" sx={{ mb: 2 }} spacing={2}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" sx={{ flex: 1 }}>Segments (ICP scoring)</Typography>
         <Tooltip title="Recompute scores for all leads">
           <span>
@@ -76,7 +76,7 @@ export default function SegmentsPage() {
         {segments.map(s => (
           <Card key={s.id} variant="outlined">
             <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <Typography variant="h6">{s.name}</Typography>
                 <Chip label={`weight ${s.weight}`} size="small" color="primary" />
                 {!s.enabled && <Chip label="disabled" size="small" />}
@@ -97,7 +97,7 @@ export default function SegmentsPage() {
                   {s.description}
                 </Typography>
               )}
-              <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 1 }}>
+              <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', mt: 1 }}>
                 {Object.entries(s.rules).map(([k, v]) => {
                   let display: string
                   if ((k === 'tags_any' || k === 'tags_all') && Array.isArray(v)) {
@@ -158,7 +158,7 @@ function SegmentEditor({ initial, onClose }: { initial: Segment | null; onClose:
   const setRule = <K extends keyof SegmentRules>(k: K, v: SegmentRules[K] | undefined) => {
     setDraft(d => {
       const next = { ...d.rules } as SegmentRules
-      if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) {
+      if (v === undefined || v === null || (v as unknown) === '' || (Array.isArray(v) && v.length === 0)) {
         delete next[k]
       } else {
         next[k] = v
@@ -275,7 +275,7 @@ function SegmentEditor({ initial, onClose }: { initial: Segment | null; onClose:
                 setRule('tags_any', Array.isArray(v) ? v : [v])
               }}
               renderValue={(selected) => (
-                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                   {(selected as string[]).map(id => {
                     const t = tagsById.get(id)
                     return (
@@ -314,7 +314,7 @@ function SegmentEditor({ initial, onClose }: { initial: Segment | null; onClose:
                 setRule('tags_all', Array.isArray(v) ? v : [v])
               }}
               renderValue={(selected) => (
-                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                   {(selected as string[]).map(id => {
                     const t = tagsById.get(id)
                     return (
@@ -363,7 +363,7 @@ function SegmentEditor({ initial, onClose }: { initial: Segment | null; onClose:
             )}
           />
 
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Button variant="outlined" onClick={() => preview(draft)}>Preview matches</Button>
             {previewData && (
               <Typography variant="body2" color="text.secondary">

@@ -53,7 +53,7 @@ export default function KanbanPage() {
     <Box>
       <Typography variant="h5" sx={{ mb: 2 }}>Lead Triage Board</Typography>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
         <TextField
           label="Search name"
           size="small"
@@ -138,7 +138,7 @@ function Column({
         minHeight: 200,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
         <Chip label={label} size="small" color={color} />
         <Typography variant="caption" color="text.secondary">{leads.length}</Typography>
       </Stack>
@@ -170,7 +170,7 @@ function LeadCard({ lead }: { lead: Lead }) {
       {...attributes}
     >
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
           <Typography variant="body2" sx={{ flex: 1, fontWeight: 500 }} noWrap>
             {lead.name}
           </Typography>
@@ -182,10 +182,10 @@ function LeadCard({ lead }: { lead: Lead }) {
             />
           )}
         </Stack>
-        <Typography variant="caption" color="text.secondary" noWrap display="block">
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
           {[lead.city, lead.state].filter(Boolean).join(', ') || '—'}
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mt: 0.5 }}>
           {lead.emails.length > 0 && (
             <Chip label={`${lead.emails.length} email${lead.emails.length === 1 ? '' : 's'}`} size="small" variant="outlined" />
           )}

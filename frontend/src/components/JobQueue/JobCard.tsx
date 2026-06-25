@@ -32,14 +32,14 @@ export default function JobCard({ job }: Props) {
 
   return (
     <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Chip
             label={status}
             color={STATUS_COLOR[status] ?? 'default'}
             size="small"
           />
-          <Typography variant="body2" fontWeight={600}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {job.config.category} · {job.config.location}
           </Typography>
           {attempt > 1 && (

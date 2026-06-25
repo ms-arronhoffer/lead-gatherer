@@ -297,9 +297,9 @@ export default function LeadDetailView({ leadId }: Props) {
           onChange={(_e, value) => {
             setLeadTags({ leadId: lead.id, tagIds: value.map(v => v.id) })
           }}
-          renderTags={(value, getTagProps) =>
+          renderValue={(value, getItemProps) =>
             value.map((option, index) => {
-              const { key, ...rest } = getTagProps({ index })
+              const { key, ...rest } = getItemProps({ index })
               return (
                 <Chip
                   key={key}
