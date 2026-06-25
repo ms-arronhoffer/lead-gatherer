@@ -84,7 +84,7 @@ async def run_pipeline(job_id: str) -> None:
 
     # Phase 2 — Website scraping (if enabled)
     if config.get("enable_website_scraping", True) and not checkpoint.get("scraping_done"):
-        await _phase_scraping(job_id)
+        await _phase_scraping(job_id, config)
         await _set_checkpoint(job_id, "scraping_done", True)
 
     if await _is_cancelled(job_id):
@@ -296,8 +296,12 @@ def _parse_city_state(address: str) -> tuple[str | None, str | None]:
     return city, state
 
 
-async def _phase_scraping(job_id: str) -> None:
+async def _phase_scraping(job_id: str, config: dict | None = None) -> None:
     from app.services.scraper_service import scrape_lead
+    from app.config import settings
+
+    config = config or {}
+    enable_news = bool(config.get("enable_news_enrichment", settings.enable_news_enrichment))
 
     async with AsyncSessionLocal() as session:
         job = await session.get(Job, job_id)
@@ -315,7 +319,6 @@ async def _phase_scraping(job_id: str) -> None:
         )
         leads_to_scrape = [(row.id, row.website) for row in result]
 
-    from app.config import settings
     sem = asyncio.Semaphore(settings.max_concurrent_scrape_requests)
 
     async def scrape_one(lead_id: str, website: str) -> None:
@@ -323,7 +326,7 @@ async def _phase_scraping(job_id: str) -> None:
             if await _is_cancelled(job_id):
                 return
             try:
-                await scrape_lead(lead_id, website)
+                await scrape_lead(lead_id, website, enable_news=enable_news)
             except Exception as exc:
                 logger.warning("Scraping failed for %s: %s", website, exc)
 

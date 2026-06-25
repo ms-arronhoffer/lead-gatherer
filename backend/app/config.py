@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     request_timeout_seconds: int = 10
     respect_robots_txt: bool = True
     max_contact_pages_per_site: int = 3
+    # Number of times to retry a transient HTTP error while scraping a page.
+    scrape_max_retries: int = 2
+    # Recent news / press-release enrichment (uses the configured search provider + LLM).
+    enable_news_enrichment: bool = False
+    max_news_articles: int = 3
     cors_origins: list[str] = ["http://localhost:3000"]
     log_level: str = "INFO"
 

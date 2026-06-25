@@ -10,6 +10,7 @@ export interface JobConfig {
   revenue_range?: string | null
   enable_website_scraping: boolean
   enable_serp_enrichment: boolean
+  enable_news_enrichment?: boolean
 }
 
 export interface Job {
