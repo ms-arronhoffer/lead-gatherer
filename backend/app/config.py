@@ -76,6 +76,15 @@ class Settings(BaseSettings):
     # Recency half-life (days) for decaying an individual signal's strength.
     signal_half_life_days: int = 45
 
+    # ---- Outcome-based segment-weight tuning ----
+    # Minimum number of matched leads before a segment's weight is tuned.
+    segment_tuning_min_samples: int = 5
+    # Fraction of the way each tuning pass moves a weight toward its target.
+    segment_tuning_learning_rate: float = 0.5
+    # Bounds the tuned weight (a segment is never auto-dropped to 0).
+    segment_tuning_min_weight: int = 10
+    segment_tuning_max_weight: int = 100
+
     # SMTP RCPT TO probe — envelope-from address used in MAIL FROM
     smtp_verify_sender: str = "verify@example.com"
 
