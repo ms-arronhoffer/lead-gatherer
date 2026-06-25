@@ -104,6 +104,46 @@ def _log_activity(
     )
 
 
+@router.get("/signals/metrics", response_model=dict)
+async def signal_metrics(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    """Precision metrics per signal type: how many leads carry each signal type
+    and what fraction of those have progressed to contacted/qualified. Lets the
+    team see which buying signals actually predict pipeline."""
+    rows = (await session.execute(
+        select(LeadSignal.type, LeadSignal.lead_id, Lead.status)
+        .join(Lead, Lead.id == LeadSignal.lead_id)
+    )).all()
+
+    # Count distinct leads per signal type and their statuses.
+    by_type: dict[str, dict] = {}
+    seen: set[tuple[str, str]] = set()
+    for stype, lead_id, status in rows:
+        if (stype, lead_id) in seen:
+            continue
+        seen.add((stype, lead_id))
+        bucket = by_type.setdefault(stype, {"leads": 0, "contacted": 0, "qualified": 0})
+        bucket["leads"] += 1
+        if status in ("contacted", "qualified"):
+            bucket["contacted"] += 1
+        if status == "qualified":
+            bucket["qualified"] += 1
+
+    metrics = []
+    for stype, b in sorted(by_type.items()):
+        leads = b["leads"]
+        metrics.append({
+            "type": stype,
+            "leads": leads,
+            "contacted": b["contacted"],
+            "qualified": b["qualified"],
+            "qualified_rate": round(b["qualified"] / leads, 3) if leads else 0.0,
+        })
+    return {"signal_types": metrics}
+
+
 @router.get("/export/csv")
 async def export_leads_csv(
     status: str | None = Query(None),

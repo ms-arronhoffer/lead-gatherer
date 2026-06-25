@@ -30,6 +30,13 @@ async def test_signals_endpoint_404_for_missing_lead(client):
 
 
 @pytest.mark.asyncio
+async def test_signal_metrics_endpoint(client):
+    resp = await client.get("/api/v1/leads/signals/metrics")
+    assert resp.status_code == 200
+    assert "signal_types" in resp.json()
+
+
+@pytest.mark.asyncio
 async def test_sort_by_priority_score(client):
     resp = await client.get("/api/v1/leads?sort_by=priority_score&sort_dir=desc")
     assert resp.status_code == 200
