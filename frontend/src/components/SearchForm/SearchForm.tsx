@@ -25,6 +25,7 @@ export default function SearchForm() {
   const [revenueRange, setRevenueRange] = useState('')
   const [enableScraping, setEnableScraping] = useState(true)
   const [enableSerp, setEnableSerp] = useState(false)
+  const [enableNews, setEnableNews] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   const { mutate: create, isPending } = useCreateJob()
@@ -47,6 +48,7 @@ export default function SearchForm() {
       revenue_range: revenueRange || null,
       enable_website_scraping: enableScraping,
       enable_serp_enrichment: enableSerp,
+      enable_news_enrichment: enableNews,
     }
     create(config, { onSuccess: (job) => setActiveJobId(job.id) })
   }
@@ -143,6 +145,10 @@ export default function SearchForm() {
             <FormControlLabel
               control={<Switch checked={enableSerp} onChange={e => setEnableSerp(e.target.checked)} />}
               label="Bing SERP enrichment (requires API key)"
+            />
+            <FormControlLabel
+              control={<Switch checked={enableNews} onChange={e => setEnableNews(e.target.checked)} />}
+              label="Recent news & press-release enrichment (requires search provider)"
             />
           </Stack>
         </Collapse>

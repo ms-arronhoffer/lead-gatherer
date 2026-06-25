@@ -11,6 +11,7 @@ class JobConfig(BaseModel):
     revenue_range: str | None = None
     enable_website_scraping: bool = True
     enable_serp_enrichment: bool = False
+    enable_news_enrichment: bool = False
     enable_apollo_enrichment: bool = False
 
 
