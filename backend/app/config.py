@@ -61,6 +61,21 @@ class Settings(BaseSettings):
     # Sequence sender pacing
     sequence_send_batch: int = 50
 
+    # ---- Lead scoring / buying-signal layer ----
+    # Reachability gate: a lead can't exceed this fit_score without at least one
+    # deliverable (mx_valid, non-role, non-disposable) email AND a normalized phone.
+    fit_unreachable_cap: int = 79
+    # priority = fit_weight*fit + intent_weight*intent (then freshness decay).
+    priority_fit_weight: float = 0.6
+    priority_intent_weight: float = 0.4
+    # Freshness decay: priority multiplier reaches ~0.5 after this many days of
+    # no activity (based on last_touched_at, falling back to created_at).
+    freshness_half_life_days: int = 60
+    # A lead is "hot" (fires lead.hot webhook) when priority_score >= this.
+    hot_lead_threshold: int = 80
+    # Recency half-life (days) for decaying an individual signal's strength.
+    signal_half_life_days: int = 45
+
     # SMTP RCPT TO probe — envelope-from address used in MAIL FROM
     smtp_verify_sender: str = "verify@example.com"
 

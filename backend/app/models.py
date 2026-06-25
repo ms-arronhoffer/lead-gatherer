@@ -66,6 +66,11 @@ class Lead(Base):
     last_touched_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
     last_touched_by_user_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("users.id"), nullable=True)
     score: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    # Split scores: fit = ICP match quality, intent = buying-signal strength,
+    # priority = freshness-decayed blend used for ranking + hot-lead alerts.
+    fit_score: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    intent_score: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    priority_score: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
     score_breakdown: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     matched_segment_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -81,6 +86,10 @@ class Lead(Base):
     activities: Mapped[list["LeadActivity"]] = relationship(
         "LeadActivity", back_populates="lead", cascade="all, delete-orphan",
         order_by="desc(LeadActivity.created_at)",
+    )
+    signals: Mapped[list["LeadSignal"]] = relationship(
+        "LeadSignal", back_populates="lead", cascade="all, delete-orphan",
+        order_by="desc(LeadSignal.detected_at)", lazy="selectin",
     )
     assignee: Mapped["User | None"] = relationship("User", foreign_keys=[assigned_to_user_id])
     last_touched_by: Mapped["User | None"] = relationship("User", foreign_keys=[last_touched_by_user_id])
@@ -223,6 +232,37 @@ class LeadActivity(Base):
 
     lead: Mapped["Lead"] = relationship("Lead", back_populates="activities")
     user: Mapped["User | None"] = relationship("User")
+
+
+class LeadSignal(Base):
+    """A first-class buying/intent signal attached to a lead.
+
+    Signals are emitted by the buying-signal layer (web visits, news/press
+    classification, future web-monitoring jobs) and feed the lead's
+    ``intent_score``. Keeping them as their own rows makes them queryable,
+    auditable, and individually weightable.
+    """
+    __tablename__ = "lead_signals"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    lead_id: Mapped[str] = mapped_column(String(64), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False, index=True)
+    # e.g. funding_round, leadership_hire, expansion, product_launch, layoffs,
+    # m_and_a, hiring, web_visit
+    type: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
+    # Points this signal contributes toward intent_score (before recency decay).
+    strength: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    # Where the signal came from, e.g. news, visitor_pixel, manual.
+    source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    # Optional stable key used to dedupe repeat detections of the same event.
+    dedupe_key: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    detected_at: Mapped[int] = mapped_column(BigInteger, nullable=False, default=_now, index=True)
+
+    lead: Mapped["Lead"] = relationship("Lead", back_populates="signals")
+
+    __table_args__ = (
+        UniqueConstraint("lead_id", "type", "dedupe_key", name="uq_lead_signal_dedupe"),
+    )
 
 
 class LeadCandidate(Base):

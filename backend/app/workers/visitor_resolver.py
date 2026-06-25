@@ -21,6 +21,9 @@ from sqlalchemy import select
 from app.config import settings
 from app.db import AsyncSessionLocal
 from app.models import LeadCandidate, VisitorEvent
+from app.services.signals.lead_match import find_matching_lead
+from app.services.signals.page_intent import aggregate_intent
+from app.services.signals.signal_service import record_signal
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +91,9 @@ def _looks_residential(name: str) -> bool:
 async def task_resolve_visitors(ctx: dict[str, Any]) -> None:
     cutoff = int(time.time()) - 3600  # last hour
     dedup_window = int(time.time()) - 86_400  # 24h
+    # Leads that matched a visiting company, with the intent strength to record
+    # after the resolver transaction commits: {lead_id: (strength, breakdown, ref)}
+    pending_signals: dict[str, tuple[int, dict, str]] = {}
     async with AsyncSessionLocal() as session:
         rows = await session.execute(
             select(VisitorEvent)
@@ -114,6 +120,20 @@ async def task_resolve_visitors(ctx: dict[str, Any]) -> None:
             if not asn_name or _looks_residential(asn_name):
                 continue
 
+            # Page-intent: weight which pages this visitor looked at.
+            strength, intent_breakdown = aggregate_intent([ev.url for ev in ip_events])
+
+            # If the resolved company matches an existing lead, queue a web_visit
+            # buying signal (recorded after this transaction commits).
+            match = await find_matching_lead(session, asn_name)
+            if match is not None and strength > 0:
+                # Use the hour bucket as a dedupe key so repeated polls within the
+                # same window don't stack duplicate visit signals.
+                ref = f"{ip}:{now // 3600}"
+                existing = pending_signals.get(match.id)
+                if existing is None or strength > existing[0]:
+                    pending_signals[match.id] = (strength, intent_breakdown, ref)
+
             recent = await session.execute(
                 select(LeadCandidate)
                 .where(LeadCandidate.source == "visitor_pixel")
@@ -136,6 +156,8 @@ async def task_resolve_visitors(ctx: dict[str, Any]) -> None:
                     "ip": ip,
                     "event_count": len(ip_events),
                     "first_url": ip_events[0].url,
+                    "intent_strength": strength,
+                    "intent": intent_breakdown,
                 },
                 status="pending",
                 discovered_at=now,
@@ -144,3 +166,17 @@ async def task_resolve_visitors(ctx: dict[str, Any]) -> None:
                 ev.resolved_company = asn_name
 
         await session.commit()
+
+    # Record web_visit signals (own their own sessions + fire webhooks).
+    for lead_id, (strength, breakdown, ref) in pending_signals.items():
+        try:
+            await record_signal(
+                lead_id,
+                type="web_visit",
+                strength=strength,
+                source="visitor_pixel",
+                payload=breakdown,
+                dedupe_key=ref,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to record web_visit signal for %s: %s", lead_id, exc)

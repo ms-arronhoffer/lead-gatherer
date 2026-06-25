@@ -36,6 +36,17 @@ class TagRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LeadSignalRead(BaseModel):
+    id: str
+    type: str
+    strength: int
+    source: str
+    payload: dict = {}
+    detected_at: int
+
+    model_config = {"from_attributes": True}
+
+
 class LeadRead(BaseModel):
     id: str
     place_id: str | None
@@ -65,11 +76,16 @@ class LeadRead(BaseModel):
     last_touched_by_user_id: str | None = None
     last_touched_by: UserRead | None = None
     score: int | None = None
+    fit_score: int | None = None
+    intent_score: int | None = None
+    priority_score: int | None = None
+    score_breakdown: dict = {}
     matched_segment_ids: list[str] = []
     summary: str | None = None
     summary_generated_at: int | None = None
     fit_reasons: list[dict] = []
     fit_reasons_generated_at: int | None = None
+    signals: list[LeadSignalRead] = []
     created_at: int
     updated_at: int
 

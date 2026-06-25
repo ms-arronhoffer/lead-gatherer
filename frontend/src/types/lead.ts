@@ -52,13 +52,27 @@ export interface Lead {
   last_touched_by_user_id?: string | null
   last_touched_by?: User | null
   score?: number | null
+  fit_score?: number | null
+  intent_score?: number | null
+  priority_score?: number | null
+  score_breakdown?: Record<string, unknown>
   matched_segment_ids?: string[]
   summary?: string | null
   summary_generated_at?: number | null
   fit_reasons?: FitReason[]
   fit_reasons_generated_at?: number | null
+  signals?: LeadSignal[]
   created_at: number
   updated_at: number
+}
+
+export interface LeadSignal {
+  id: string
+  type: string
+  strength: number
+  source: string
+  payload: Record<string, unknown>
+  detected_at: number
 }
 
 export interface FitReason {
