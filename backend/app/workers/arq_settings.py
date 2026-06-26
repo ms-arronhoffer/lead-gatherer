@@ -12,6 +12,7 @@ from app.workers.reply_poller import task_poll_replies
 from app.workers.sequence_sender import task_send_sequence_batch
 from app.workers.signal_monitor import task_monitor_signals
 from app.workers.visitor_resolver import task_resolve_visitors
+from app.workers.linkedin_enricher import task_enrich_linkedin
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class WorkerSettings:
         task_send_sequence_batch,
         task_poll_replies,
         task_monitor_signals,
+        task_enrich_linkedin,
     ]
     cron_jobs = [
         cron(task_resolve_visitors, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}),

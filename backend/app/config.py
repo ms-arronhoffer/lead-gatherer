@@ -88,6 +88,39 @@ class Settings(BaseSettings):
     # SMTP RCPT TO probe — envelope-from address used in MAIL FROM
     smtp_verify_sender: str = "verify@example.com"
 
+    # ---- LinkedIn headless-browser enrichment (off by default) ----
+    # Automated LinkedIn login/scraping violates LinkedIn's Terms of Service and
+    # can get accounts restricted. This whole feature is gated behind this flag.
+    enable_linkedin_enrichment: bool = False
+    # Service-account credentials used to log in. Prefer injecting via env/secret
+    # store; never commit real values.
+    linkedin_username: str = ""
+    linkedin_password: str = ""
+    # Where the authenticated browser storage state (cookies) is persisted so
+    # subsequent runs can skip the login flow. Keep this path out of version
+    # control. Empty disables persistence.
+    linkedin_storage_state_path: str = "/data/linkedin_state.json"
+    # Run the browser headless. Set false locally to solve a one-time challenge.
+    linkedin_headless: bool = True
+    # Conservative human-like pacing between LinkedIn page actions (seconds).
+    linkedin_action_delay_seconds: float = 3.0
+    # Per-operation navigation timeout (milliseconds).
+    linkedin_nav_timeout_ms: int = 30000
+    # Max decision-maker candidates to keep per company.
+    linkedin_max_candidates: int = 5
+    # How many profiles to inspect before ranking down to max_candidates.
+    linkedin_max_profiles_scanned: int = 15
+    # Max recent posts to scan for buying signals.
+    linkedin_max_posts: int = 10
+    # Title keywords that mark a person as a decision maker (case-insensitive
+    # substring match). Override via LINKEDIN_DECISION_MAKER_TITLES.
+    linkedin_decision_maker_titles: list[str] = [
+        "ceo", "chief", "cfo", "coo", "cto", "cmo", "ciso", "cio",
+        "owner", "founder", "co-founder", "president", "partner",
+        "principal", "vp", "vice president", "head of", "director",
+        "managing director", "general manager",
+    ]
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -18,7 +18,7 @@ from app.services.scoring import score_lead
 from app.services.webhook_dispatcher import enqueue_event
 from app.utils.email_validator import validate_email
 from app.utils.phone_normalizer import normalize_phone
-from app.workers.arq_pool import enqueue_enrich
+from app.workers.arq_pool import enqueue_enrich, enqueue_linkedin_enrich
 
 router = APIRouter()
 
@@ -498,6 +498,40 @@ async def enrich_lead(
         user_id=user.id,
         action="enrich_queued",
         payload={"website": lead.website},
+    )
+    _touch(lead, user)
+    await session.commit()
+    return {"status": "queued", "lead_id": lead_id}
+
+
+@router.post("/{lead_id}/linkedin-enrich", status_code=202)
+async def linkedin_enrich_lead(
+    lead_id: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    """Queue LinkedIn enrichment: log in with the configured service account,
+    find the company's decision makers, add them as contacts, and mine recent
+    posts for buying signals. Gated behind ENABLE_LINKEDIN_ENRICHMENT."""
+    from app.services.linkedin.browser_session import is_configured as linkedin_configured
+
+    lead = await session.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    if not linkedin_configured():
+        raise HTTPException(
+            status_code=400,
+            detail="LinkedIn enrichment is disabled or not configured",
+        )
+    enqueued = await enqueue_linkedin_enrich(lead_id)
+    if not enqueued:
+        return {"status": "already_running", "lead_id": lead_id}
+    _log_activity(
+        session,
+        lead_id=lead.id,
+        user_id=user.id,
+        action="linkedin_enrich_queued",
+        payload={"company": lead.name},
     )
     _touch(lead, user)
     await session.commit()

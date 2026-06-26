@@ -45,6 +45,9 @@ export const revalidateLead = (id: string): Promise<Lead> =>
 export const enrichLead = (id: string): Promise<{ status: string; lead_id: string }> =>
   client.post<{ status: string; lead_id: string }>(`/leads/${id}/enrich`).then(r => r.data)
 
+export const linkedinEnrichLead = (id: string): Promise<{ status: string; lead_id: string }> =>
+  client.post<{ status: string; lead_id: string }>(`/leads/${id}/linkedin-enrich`).then(r => r.data)
+
 export const exportLeadsCsv = (filters: LeadFilters = {}): void => {
   const params = new URLSearchParams(
     Object.entries(filters)

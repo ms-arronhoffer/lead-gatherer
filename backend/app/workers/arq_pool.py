@@ -40,6 +40,16 @@ async def enqueue_enrich(lead_id: str) -> bool:
     return job is not None
 
 
+async def enqueue_linkedin_enrich(lead_id: str) -> bool:
+    """Enqueue LinkedIn enrichment for a single lead. Returns False if a job for
+    this lead is already enqueued/running (dedupe by lead_id)."""
+    pool = await get_pool()
+    job = await pool.enqueue_job(
+        "task_enrich_linkedin", lead_id, _job_id=f"linkedin:{lead_id}"
+    )
+    return job is not None
+
+
 async def abort_pipeline(job_id: str) -> bool:
     """Abort an in-flight pipeline task. Returns True if abort signal sent."""
     pool = await get_pool()

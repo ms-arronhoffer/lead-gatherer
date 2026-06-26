@@ -20,6 +20,8 @@ export interface LeadContact {
   title: string | null
   phone: string | null
   email: string | null
+  linkedin_url?: string | null
+  seniority?: string | null
   source: string
 }
 
