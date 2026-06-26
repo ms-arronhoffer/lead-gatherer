@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 *.db
+linkedin_state.json
 node_modules/
 dist/
 .vite/

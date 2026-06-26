@@ -128,6 +128,8 @@ class LeadContact(Base):
     title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     email: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    linkedin_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    seniority: Mapped[str | None] = mapped_column(String(48), nullable=True)
     source: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False, default=_now)
 

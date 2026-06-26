@@ -23,6 +23,8 @@ class LeadContactRead(BaseModel):
     title: str | None
     phone: str | None
     email: str | None
+    linkedin_url: str | None = None
+    seniority: str | None = None
     source: str
 
     model_config = {"from_attributes": True}
