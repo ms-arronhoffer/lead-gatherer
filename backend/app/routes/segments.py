@@ -10,9 +10,11 @@ from app.auth import current_user
 from app.db import get_session
 from app.models import Lead, Segment, User
 from app.schemas.segment import (
-    SegmentCreate, SegmentPreview, SegmentRead, SegmentUpdate,
+    SegmentCreate, SegmentPreview, SegmentRead, SegmentTuning,
+    SegmentTuningApplied, SegmentUpdate,
 )
 from app.services.scoring import rescore_all, segment_matches
+from app.services.segment_tuning import apply_tuning, compute_tuning
 
 router = APIRouter()
 
@@ -82,6 +84,28 @@ async def delete_segment(
     await session.delete(seg)
     await session.commit()
     await rescore_all(session)
+
+
+@router.get("/tuning", response_model=list[SegmentTuning])
+async def tuning_preview(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    """Preview outcome-based weight adjustments for every enabled segment.
+
+    Compares the leads each segment matches against their qualified-conversion
+    rate and proposes a new weight — without persisting anything.
+    """
+    return await compute_tuning(session)
+
+
+@router.post("/tuning/apply", response_model=SegmentTuningApplied)
+async def tuning_apply(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    """Apply the proposed weight adjustments and rescore all leads."""
+    return await apply_tuning(session)
 
 
 @router.post("/preview", response_model=SegmentPreview)

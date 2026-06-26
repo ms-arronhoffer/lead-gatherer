@@ -19,7 +19,7 @@ export default function AuthShell({ children }: Props) {
 
   if (!ready) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         {error ? <Typography color="error">{error}</Typography> : <CircularProgress />}
       </Box>
     )
@@ -38,7 +38,7 @@ function SignedInGate({ children }: Props) {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <CircularProgress />
       </Box>
     )
@@ -46,8 +46,8 @@ function SignedInGate({ children }: Props) {
 
   if (!me || error) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Stack spacing={2} alignItems="center">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Stack spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant="h5">Lead Gatherer</Typography>
           <Typography color="text.secondary">Sign in with your Microsoft account to continue.</Typography>
           <Button variant="contained" onClick={() => signIn()}>Sign in</Button>

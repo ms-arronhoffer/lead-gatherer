@@ -14,7 +14,7 @@ export default function JobQueue() {
 
   return (
     <Stack spacing={1} sx={{ mt: 2 }}>
-      <Typography variant="subtitle1" fontWeight={600}>Recent Jobs</Typography>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Recent Jobs</Typography>
       {jobs.map(job => <JobCard key={job.id} job={job} />)}
     </Stack>
   )

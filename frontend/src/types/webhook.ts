@@ -1,9 +1,16 @@
-export type WebhookEvent = 'lead.created' | 'lead.updated' | 'lead.status_changed'
+export type WebhookEvent =
+  | 'lead.created'
+  | 'lead.updated'
+  | 'lead.status_changed'
+  | 'signal.detected'
+  | 'lead.hot'
 
 export const WEBHOOK_EVENTS: WebhookEvent[] = [
   'lead.created',
   'lead.updated',
   'lead.status_changed',
+  'signal.detected',
+  'lead.hot',
 ]
 
 export interface Webhook {

@@ -47,3 +47,21 @@ export interface SegmentPreview {
   matches: number
   total: number
 }
+
+export interface SegmentTuning {
+  segment_id: string
+  name: string
+  matched: number
+  contacted: number
+  qualified: number
+  conversion_rate: number
+  current_weight: number
+  proposed_weight: number
+  delta: number
+  sufficient_data: boolean
+}
+
+export interface SegmentTuningApplied {
+  applied: SegmentTuning[]
+  rescored: number
+}

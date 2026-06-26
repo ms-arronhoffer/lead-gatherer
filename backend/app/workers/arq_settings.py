@@ -10,6 +10,7 @@ from app.db import AsyncSessionLocal
 from app.models import Job
 from app.workers.reply_poller import task_poll_replies
 from app.workers.sequence_sender import task_send_sequence_batch
+from app.workers.signal_monitor import task_monitor_signals
 from app.workers.visitor_resolver import task_resolve_visitors
 
 logger = logging.getLogger(__name__)
@@ -72,11 +73,13 @@ class WorkerSettings:
         task_resolve_visitors,
         task_send_sequence_batch,
         task_poll_replies,
+        task_monitor_signals,
     ]
     cron_jobs = [
         cron(task_resolve_visitors, minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}),
         cron(task_send_sequence_batch, minute=set(range(0, 60))),  # every minute
         cron(task_poll_replies, minute={0, 10, 20, 30, 40, 50}),
+        cron(task_monitor_signals, hour={2, 14}, minute={0}),  # twice daily
     ]
     redis_settings = _redis_settings()
     max_tries = 3                     # 1 try + 2 retries on failure

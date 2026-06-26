@@ -1,5 +1,5 @@
 import client from './client'
-import type { Lead, LeadActivity, LeadsPage, LeadUpdate } from '../types/lead'
+import type { Lead, LeadActivity, LeadsPage, LeadUpdate, SignalMetrics } from '../types/lead'
 
 export interface LeadFilters {
   status?: string
@@ -23,6 +23,9 @@ export const listLeads = (filters: LeadFilters = {}): Promise<LeadsPage> =>
 
 export const getLead = (id: string): Promise<Lead> =>
   client.get<Lead>(`/leads/${id}`).then(r => r.data)
+
+export const getSignalMetrics = (): Promise<SignalMetrics> =>
+  client.get<SignalMetrics>('/leads/signals/metrics').then(r => r.data)
 
 export const updateLead = (id: string, data: LeadUpdate): Promise<Lead> =>
   client.patch<Lead>(`/leads/${id}`, data).then(r => r.data)

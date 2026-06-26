@@ -308,3 +308,25 @@ async def _enrich_from_news(lead_id: str) -> None:
     if combined:
         await _save_llm_contacts(lead_id, combined, source="news")
 
+    # Buying-signal classification over the same coverage (funding, hires,
+    # expansion, product launches, M&A, hiring, layoffs).
+    if combined:
+        from app.services.signals.news_signals import classify_news
+        from app.services.signals.signal_service import record_signal
+        try:
+            for sig in await classify_news(company, combined):
+                await record_signal(
+                    lead_id,
+                    type=sig["type"],
+                    strength=sig["strength"],
+                    source="news",
+                    payload={
+                        "evidence": sig["evidence"],
+                        "confidence": sig["confidence"],
+                        "article_urls": [a.url for a in result.articles],
+                    },
+                    dedupe_key=sig["type"],
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("News signal detection failed for %s: %s", company, exc)
+

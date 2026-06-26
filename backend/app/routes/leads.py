@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import current_user
 from app.db import get_session
-from app.models import Lead, LeadActivity, LeadEmail, JobLead, Tag, User
-from app.schemas.lead import LeadAssign, LeadRead, LeadUpdate
+from app.models import Lead, LeadActivity, LeadEmail, LeadSignal, JobLead, Tag, User
+from app.schemas.lead import LeadAssign, LeadRead, LeadSignalRead, LeadUpdate
 from app.schemas.user import LeadActivityRead
 from app.services.scoring import score_lead
 from app.services.webhook_dispatcher import enqueue_event
@@ -23,7 +23,7 @@ from app.workers.arq_pool import enqueue_enrich
 router = APIRouter()
 
 VALID_STATUSES = {"new", "contacted", "qualified", "rejected"}
-VALID_SORT = {"created_at", "name", "city", "state", "status", "updated_at", "last_touched_at", "score"}
+VALID_SORT = {"created_at", "name", "city", "state", "status", "updated_at", "last_touched_at", "score", "fit_score", "intent_score", "priority_score"}
 
 
 def _build_query(
@@ -102,6 +102,46 @@ def _log_activity(
             created_at=int(time.time()),
         )
     )
+
+
+@router.get("/signals/metrics", response_model=dict)
+async def signal_metrics(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    """Precision metrics per signal type: how many leads carry each signal type
+    and what fraction of those have progressed to contacted/qualified. Lets the
+    team see which buying signals actually predict pipeline."""
+    rows = (await session.execute(
+        select(LeadSignal.type, LeadSignal.lead_id, Lead.status)
+        .join(Lead, Lead.id == LeadSignal.lead_id)
+    )).all()
+
+    # Count distinct leads per signal type and their statuses.
+    by_type: dict[str, dict] = {}
+    seen: set[tuple[str, str]] = set()
+    for stype, lead_id, status in rows:
+        if (stype, lead_id) in seen:
+            continue
+        seen.add((stype, lead_id))
+        bucket = by_type.setdefault(stype, {"leads": 0, "contacted": 0, "qualified": 0})
+        bucket["leads"] += 1
+        if status in ("contacted", "qualified"):
+            bucket["contacted"] += 1
+        if status == "qualified":
+            bucket["qualified"] += 1
+
+    metrics = []
+    for stype, b in sorted(by_type.items()):
+        leads = b["leads"]
+        metrics.append({
+            "type": stype,
+            "leads": leads,
+            "contacted": b["contacted"],
+            "qualified": b["qualified"],
+            "qualified_rate": round(b["qualified"] / leads, 3) if leads else 0.0,
+        })
+    return {"signal_types": metrics}
 
 
 @router.get("/export/csv")
@@ -365,6 +405,25 @@ async def list_lead_activities(
         .limit(limit)
     )
     return [LeadActivityRead.model_validate(a) for a in result.scalars().all()]
+
+
+@router.get("/{lead_id}/signals", response_model=list[LeadSignalRead])
+async def list_lead_signals(
+    lead_id: str,
+    limit: int = Query(100, ge=1, le=500),
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+):
+    lead = await session.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    result = await session.execute(
+        select(LeadSignal)
+        .where(LeadSignal.lead_id == lead_id)
+        .order_by(LeadSignal.detected_at.desc())
+        .limit(limit)
+    )
+    return [LeadSignalRead.model_validate(s) for s in result.scalars().all()]
 
 
 @router.delete("/{lead_id}", status_code=204)

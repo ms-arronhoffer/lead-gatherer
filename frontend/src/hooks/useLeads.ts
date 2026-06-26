@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listLeads, updateLead, deleteLead, getLead, revalidateLead, enrichLead, assignLead, listLeadActivities } from '../api/leads'
+import { listLeads, updateLead, deleteLead, getLead, revalidateLead, enrichLead, assignLead, listLeadActivities, getSignalMetrics } from '../api/leads'
 import type { LeadFilters } from '../api/leads'
 import type { Lead, LeadsPage, LeadUpdate } from '../types/lead'
 
@@ -8,6 +8,26 @@ export const useLeads = (filters: LeadFilters) =>
     queryKey: ['leads', filters],
     queryFn: () => listLeads(filters),
   })
+
+// Default priority_score threshold above which a lead is considered "hot"
+// (mirrors the backend `hot_lead_threshold` setting).
+export const HOT_LEAD_THRESHOLD = 80
+
+export const useHotLeads = (minScore: number = HOT_LEAD_THRESHOLD, pageSize = 100) =>
+  useQuery({
+    queryKey: ['hot-leads', minScore, pageSize],
+    queryFn: () => listLeads({
+      min_score: minScore,
+      sort_by: 'priority_score',
+      sort_dir: 'desc',
+      page: 1,
+      page_size: pageSize,
+    }),
+    refetchInterval: 30_000,
+  })
+
+export const useSignalMetrics = () =>
+  useQuery({ queryKey: ['signal-metrics'], queryFn: getSignalMetrics })
 
 export const useLead = (id: string | null) =>
   useQuery({

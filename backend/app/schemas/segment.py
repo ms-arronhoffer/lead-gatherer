@@ -34,3 +34,22 @@ class SegmentRead(SegmentBase):
 class SegmentPreview(BaseModel):
     matches: int
     total: int
+
+
+class SegmentTuning(BaseModel):
+    """Proposed weight adjustment for a single segment based on lead outcomes."""
+    segment_id: str
+    name: str
+    matched: int
+    contacted: int
+    qualified: int
+    conversion_rate: float
+    current_weight: int
+    proposed_weight: int
+    delta: int
+    sufficient_data: bool
+
+
+class SegmentTuningApplied(BaseModel):
+    applied: list[SegmentTuning]
+    rescored: int

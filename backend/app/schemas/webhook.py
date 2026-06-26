@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, HttpUrl
 
-VALID_EVENTS = {"lead.created", "lead.updated", "lead.status_changed"}
+VALID_EVENTS = {"lead.created", "lead.updated", "lead.status_changed", "signal.detected", "lead.hot"}
 
 
 class WebhookCreate(BaseModel):

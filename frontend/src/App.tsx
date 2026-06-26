@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppBar, Container, Toolbar, Typography, Button } from '@mui/material'
 import SearchPage from './pages/SearchPage'
 import LeadsPage from './pages/LeadsPage'
+import HotLeadsPage from './pages/HotLeadsPage'
 import KanbanPage from './pages/KanbanPage'
 import SegmentsPage from './pages/SegmentsPage'
 import TagsPage from './pages/TagsPage'
@@ -27,6 +28,7 @@ export default function App() {
               <Typography variant="h6" sx={{ flex: 1 }}>Lead Gatherer</Typography>
               <Button color="inherit" component={Link} to="/">Search</Button>
               <Button color="inherit" component={Link} to="/leads">Leads</Button>
+              <Button color="inherit" component={Link} to="/leads/hot">Hot Leads</Button>
               <Button color="inherit" component={Link} to="/leads/candidates">Candidates</Button>
               <Button color="inherit" component={Link} to="/leads/kanban">Kanban</Button>
               <Button color="inherit" component={Link} to="/sequences">Sequences</Button>
@@ -40,6 +42,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<SearchPage />} />
               <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/leads/hot" element={<HotLeadsPage />} />
               <Route path="/leads/candidates" element={<CandidatesPage />} />
               <Route path="/leads/kanban" element={<KanbanPage />} />
               <Route path="/leads/:id" element={<LeadDetailPage />} />

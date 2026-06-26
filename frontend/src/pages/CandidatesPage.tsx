@@ -78,14 +78,14 @@ export default function CandidatesPage() {
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" sx={{ flex: 1 }}>Lead Candidates</Typography>
         <Button variant="contained" onClick={() => { setHarvestErr(null); setHarvestOpen(true) }}>
           Harvest URLs
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ width: 150 }}>
           <InputLabel>Status</InputLabel>
           <Select

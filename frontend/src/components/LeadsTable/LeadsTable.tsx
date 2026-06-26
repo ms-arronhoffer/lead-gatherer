@@ -136,7 +136,7 @@ export default function LeadsTable() {
   return (
     <Box>
       {/* Filter bar */}
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
         <TextField
           id="lead-search-input"
           label="Search name"
@@ -367,7 +367,7 @@ function LeadRow({
       <TableCell><ScoreBadge score={lead.score ?? null} /></TableCell>
       <TableCell>{lead.phone}</TableCell>
       <TableCell onClick={stop}>
-        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+        <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
           {lead.emails.slice(0, 2).map(e => (
             <Chip key={e.id} label={e.email} size="small" variant="outlined" />
           ))}
@@ -416,7 +416,7 @@ function AssigneeCell({ lead }: { lead: Lead }) {
   }
   const name = (u: { display_name: string | null; email: string }) => u.display_name || u.email
   return (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
       {assignee ? (
         <Tooltip title={`Assigned to ${name(assignee)}`}>
           <Avatar sx={{ width: 24, height: 24, fontSize: 11, bgcolor: 'primary.dark' }}>
