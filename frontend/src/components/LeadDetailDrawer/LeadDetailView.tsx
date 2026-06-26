@@ -8,7 +8,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
-import { useLead, useUpdateLead, useRevalidateLead, useEnrichLead, useAssignLead, useLeadActivities } from '../../hooks/useLeads'
+import LinkedInIcon from '@mui/icons-material/LinkedIn'
+import { useLead, useUpdateLead, useRevalidateLead, useEnrichLead, useLinkedinEnrichLead, useAssignLead, useLeadActivities } from '../../hooks/useLeads'
 import { useUsers } from '../../hooks/useMe'
 import { useTags, useSetLeadTags } from '../../hooks/useTags'
 import type { LeadActivity, LeadEmail, LeadStatus, LeadUpdate } from '../../types/lead'
@@ -30,6 +31,7 @@ export default function LeadDetailView({ leadId }: Props) {
   const { mutate: updateLead } = useUpdateLead()
   const { mutate: revalidate, isPending: revalidating } = useRevalidateLead()
   const { mutate: enrich, isPending: enriching } = useEnrichLead()
+  const { mutate: linkedinEnrich, isPending: linkedinEnriching } = useLinkedinEnrichLead()
   const { mutate: assign } = useAssignLead()
   const { data: users = [] } = useUsers()
   const { data: allTags = [] } = useTags()
@@ -96,19 +98,34 @@ export default function LeadDetailView({ leadId }: Props) {
             sx={{ mt: 0.5 }}
           />
         </Box>
-        <Tooltip title={lead.website ? 'Re-scrape website and refresh AI brief, contacts, and fit reasons' : 'No website to scrape'}>
-          <span>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<AutoFixHighIcon />}
-              disabled={!lead.website || enriching}
-              onClick={() => enrich(lead.id)}
-            >
-              {enriching ? 'Queued…' : 'Re-enrich'}
-            </Button>
-          </span>
-        </Tooltip>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title={lead.website ? 'Re-scrape website and refresh AI brief, contacts, and fit reasons' : 'No website to scrape'}>
+            <span>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<AutoFixHighIcon />}
+                disabled={!lead.website || enriching}
+                onClick={() => enrich(lead.id)}
+              >
+                {enriching ? 'Queued…' : 'Re-enrich'}
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Find decision-makers and buying signals from LinkedIn (must be enabled on the server)">
+            <span>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<LinkedInIcon />}
+                disabled={linkedinEnriching}
+                onClick={() => linkedinEnrich(lead.id)}
+              >
+                {linkedinEnriching ? 'Queued…' : 'LinkedIn'}
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Divider />
@@ -261,8 +278,16 @@ export default function LeadDetailView({ leadId }: Props) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {lead.contacts.map(c => (
               <Box key={c.id}>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   {c.name}{c.title ? ` — ${c.title}` : ''}
+                  {c.seniority && (
+                    <Chip label={c.seniority.replace('_', ' ')} size="small" variant="outlined" />
+                  )}
+                  {c.linkedin_url && (
+                    <Link href={c.linkedin_url} target="_blank" rel="noopener" sx={{ display: 'inline-flex' }}>
+                      <LinkedInIcon fontSize="small" />
+                    </Link>
+                  )}
                 </Typography>
                 {(c.email || c.phone) && (
                   <Typography variant="caption" color="text.secondary">
@@ -410,6 +435,13 @@ function actionLabel(a: LeadActivity): string {
       return 'revalidated emails'
     case 'enrich_queued':
       return 'queued AI re-enrichment'
+    case 'linkedin_enrich_queued':
+      return 'queued LinkedIn enrichment'
+    case 'linkedin_enriched': {
+      const added = typeof p.contacts_added === 'number' ? p.contacts_added : 0
+      const sigs = typeof p.signals_recorded === 'number' ? p.signals_recorded : 0
+      return `LinkedIn enrichment: +${added} contact${added === 1 ? '' : 's'}, ${sigs} signal${sigs === 1 ? '' : 's'}`
+    }
     case 'tags_updated': {
       const added = Array.isArray(p.added) ? (p.added as string[]).length : 0
       const removed = Array.isArray(p.removed) ? (p.removed as string[]).length : 0

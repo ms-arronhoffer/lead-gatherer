@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listLeads, updateLead, deleteLead, getLead, revalidateLead, enrichLead, assignLead, listLeadActivities, getSignalMetrics } from '../api/leads'
+import { listLeads, updateLead, deleteLead, getLead, revalidateLead, enrichLead, linkedinEnrichLead, assignLead, listLeadActivities, getSignalMetrics } from '../api/leads'
 import type { LeadFilters } from '../api/leads'
 import type { Lead, LeadsPage, LeadUpdate } from '../types/lead'
 
@@ -95,6 +95,21 @@ export const useEnrichLead = () => {
         qc.invalidateQueries({ queryKey: ['leads'] })
         qc.invalidateQueries({ queryKey: ['lead-activities', id] })
       }, 5000)
+    },
+  })
+}
+
+export const useLinkedinEnrichLead = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => linkedinEnrichLead(id),
+    onSuccess: (_, id) => {
+      // LinkedIn enrichment is slow (browser automation); refetch after a longer delay.
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ['lead', id] })
+        qc.invalidateQueries({ queryKey: ['leads'] })
+        qc.invalidateQueries({ queryKey: ['lead-activities', id] })
+      }, 15000)
     },
   })
 }
